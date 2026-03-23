@@ -141,8 +141,8 @@ body { font-family: 'Lato', sans-serif; background: var(--bg); color: var(--text
 .insight-source { font-size: 11px; color: var(--accent); font-weight: 700; margin-bottom: 4px; letter-spacing: 0.04em; }
 .insight-txt { font-size: 13px; color: var(--text2); line-height: 1.6; }
 
-.color-row { display: flex; gap: 8px; flex-wrap: wrap; }
-.color-dot { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s; }
+.color-row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 6px; }
+.color-dot { width: 100%; aspect-ratio: 1; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s; }
 .color-dot.selected { border-color: var(--accent); transform: scale(1.2); }
 
 .status-row { display: flex; gap: 8px; }
