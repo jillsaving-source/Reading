@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>閱讀紀錄</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #ffffff;
+  --bg2: #f7f5f2;
+  --bg3: #eeebe6;
+  --surface: #f0ede8;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.14);
+  --text: #1a1814;
+  --text2: #5a5450;
+  --text3: #9a9490;
+  --accent: #7b8b6f;
+  --accent2: #64755a;
+  --accent-light: #eef1eb;
+  --r: 10px;
+  --r2: 16px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Lato', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 100px; }
+
+.header { padding: 20px 18px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; background: var(--bg); }
+.header h1 { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; color: var(--text); }
+.header-sub { font-size: 11px; color: var(--text3); margin-top: 2px; letter-spacing: 0.06em; }
+.add-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--accent); border: none; cursor: pointer; font-size: 22px; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.add-btn:active { background: var(--accent2); }
+
+.tabs { display: flex; background: var(--bg2); border-bottom: 1px solid var(--border); position: sticky; top: 73px; z-index: 99; }
+.tab { flex: 1; padding: 11px 0; font-size: 12px; font-weight: 700; letter-spacing: 0.07em; text-align: center; cursor: pointer; color: var(--text3); border: none; background: none; border-bottom: 2px solid transparent; font-family: 'Lato', sans-serif; transition: all 0.2s; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.panel { display: none; padding: 18px; }
+.panel.active { display: block; }
+
+.shelf-section { margin-bottom: 28px; }
+.shelf-label { font-size: 10px; letter-spacing: 0.12em; color: var(--text3); margin-bottom: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.shelf-label::after { content:''; flex:1; height:1px; background: var(--border); }
+.books-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+.book-card { cursor: pointer; position: relative; transition: transform 0.2s; }
+.book-card:active { transform: scale(0.96); }
+.book-cover { width: 100%; aspect-ratio: 2/3; border-radius: 4px 8px 8px 4px; overflow: hidden; position: relative; box-shadow: -2px 3px 8px rgba(0,0,0,0.15), inset -2px 0 4px rgba(0,0,0,0.08); }
+.book-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.book-cover-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 10px; text-align: center; }
+.book-cover-ph span { font-family: 'Playfair Display', serif; font-size: 11px; font-style: italic; color: rgba(255,255,255,0.9); line-height: 1.4; }
+.book-spine { position: absolute; left: 0; top: 0; bottom: 0; width: 6px; border-radius: 4px 0 0 4px; background: rgba(0,0,0,0.2); }
+.book-status-badge { position: absolute; top: 5px; right: 5px; font-size: 9px; font-weight: 700; letter-spacing: 0.05em; padding: 2px 6px; border-radius: 3px; }
+.badge-reading { background: var(--accent); color: #fff; }
+.badge-done { background: #2ecc71; color: #0a2a15; }
+.book-meta { margin-top: 7px; }
+.book-meta-title { font-size: 12px; font-weight: 700; line-height: 1.3; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.book-meta-author { font-size: 11px; color: var(--text3); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.book-progress-mini { margin-top: 5px; height: 2px; background: var(--surface); border-radius: 1px; }
+.book-progress-fill { height: 100%; background: var(--accent); border-radius: 1px; transition: width 0.4s; }
+.stars-mini { margin-top: 4px; font-size: 11px; color: var(--accent); letter-spacing: -1px; }
+
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; }
+.modal-overlay.open { display: block; }
+.modal { position: absolute; bottom: 0; left: 0; right: 0; background: var(--bg); border-radius: 20px 20px 0 0; max-height: 92vh; overflow-y: auto; padding: 0 0 40px 0; }
+.modal-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 12px auto 0; }
+.modal-close-row { display: flex; justify-content: flex-end; padding: 8px 16px 0; }
+.modal-close { background: var(--surface); border: none; border-radius: 50%; width: 28px; height: 28px; cursor: pointer; font-size: 13px; color: var(--text2); display: flex; align-items: center; justify-content: center; }
+.modal-body { padding: 0 18px; }
+
+.detail-header { display: flex; gap: 14px; margin-bottom: 20px; align-items: flex-start; }
+.detail-cover { width: 80px; flex-shrink: 0; aspect-ratio: 2/3; border-radius: 3px 7px 7px 3px; overflow: hidden; box-shadow: -2px 2px 8px rgba(0,0,0,0.15); }
+.detail-cover img { width: 100%; height: 100%; object-fit: cover; }
+.detail-cover-ph { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 8px; }
+.detail-cover-ph span { font-family: 'Playfair Display', serif; font-size: 10px; font-style: italic; color: rgba(255,255,255,0.85); text-align: center; }
+.detail-info { flex: 1; min-width: 0; }
+.detail-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; line-height: 1.3; color: var(--text); margin-bottom: 4px; }
+.detail-author { font-size: 13px; color: var(--text2); margin-bottom: 10px; }
+.detail-progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); margin-bottom: 5px; }
+.detail-progress-label span:last-child { color: var(--accent); font-weight: 700; }
+.detail-track { height: 4px; background: var(--surface); border-radius: 2px; margin-bottom: 10px; }
+.detail-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.4s; }
+.page-row { display: flex; gap: 8px; align-items: center; }
+.page-row input { flex: 1; background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; padding: 7px 10px; color: var(--text); font-size: 13px; font-family: 'Lato', sans-serif; text-align: center; outline: none; }
+.page-row span { color: var(--text3); font-size: 13px; }
+.update-btn { padding: 7px 14px; background: var(--accent); border: none; border-radius: 8px; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'Lato', sans-serif; white-space: nowrap; }
+
+.section-title { font-size: 10px; letter-spacing: 0.1em; font-weight: 700; color: var(--text3); margin: 20px 0 10px; display: flex; align-items: center; gap: 8px; }
+.section-title::after { content:''; flex:1; height:1px; background: var(--border); }
+
+.field { margin-bottom: 12px; }
+.field label { display: block; font-size: 11px; color: var(--text3); margin-bottom: 5px; letter-spacing: 0.04em; font-weight: 700; }
+.field input, .field textarea { width: 100%; background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; padding: 10px 12px; font-size: 14px; color: var(--text); font-family: 'Lato', sans-serif; outline: none; -webkit-appearance: none; }
+.field textarea { resize: none; line-height: 1.6; }
+.field input:focus, .field textarea:focus { border-color: var(--accent); }
+
+.log-item { background: var(--surface); border-radius: var(--r); padding: 12px 14px; margin-bottom: 8px; }
+.log-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.log-item-date { font-size: 11px; color: var(--text3); }
+.log-item-dur { font-size: 11px; color: var(--accent); font-weight: 700; }
+.log-item-text { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.log-item-insight { margin-top: 8px; padding: 8px 10px; background: var(--accent-light); border-left: 2px solid var(--accent); border-radius: 0 6px 6px 0; font-size: 12px; color: var(--text2); line-height: 1.6; }
+.log-item-insight-label { font-size: 10px; color: var(--accent); letter-spacing: 0.06em; margin-bottom: 3px; font-weight: 700; }
+
+.review-box { background: var(--surface); border-radius: var(--r); padding: 14px; margin-bottom: 12px; }
+.review-stars-row { display: flex; gap: 6px; margin-bottom: 12px; }
+.star-btn { font-size: 26px; background: none; border: none; cursor: pointer; color: var(--border2); transition: color 0.15s; padding: 0; }
+.star-btn.lit { color: var(--accent); }
+.review-text { font-size: 14px; color: var(--text); line-height: 1.7; white-space: pre-wrap; }
+.review-date { font-size: 11px; color: var(--text3); margin-top: 8px; }
+
+.action-row { display: flex; gap: 8px; margin-top: 4px; margin-bottom: 4px; flex-wrap: wrap; }
+.btn-primary { flex: 1; padding: 13px; background: var(--accent); border: none; border-radius: var(--r); color: #fff; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Lato', sans-serif; min-width: 80px; }
+.btn-primary:active { background: var(--accent2); }
+.btn-ghost { padding: 13px 14px; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--r); color: var(--text2); font-size: 13px; cursor: pointer; font-family: 'Lato', sans-serif; white-space: nowrap; }
+.btn-danger { padding: 13px 14px; background: transparent; border: 1px solid rgba(192,57,43,0.35); border-radius: var(--r); color: #c0392b; font-size: 13px; cursor: pointer; font-family: 'Lato', sans-serif; white-space: nowrap; }
+
+.add-modal { position: absolute; bottom: 0; left: 0; right: 0; background: var(--bg); border-radius: 20px 20px 0 0; max-height: 90vh; overflow-y: auto; padding: 0 18px 40px; }
+.add-modal h2 { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; margin: 16px 0 18px; color: var(--text); }
+
+.cover-upload { width: 90px; flex-shrink: 0; aspect-ratio: 2/3; border: 2px dashed var(--border2); border-radius: 4px 10px 10px 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; overflow: hidden; transition: border-color 0.2s; }
+.cover-upload:hover { border-color: var(--accent); }
+.cover-upload img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.cover-upload-label { font-size: 11px; color: var(--text3); text-align: center; line-height: 1.5; }
+.cover-upload-icon { font-size: 20px; margin-bottom: 4px; }
+.cover-upload input { display: none; }
+
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+.stat-card { background: var(--surface); border-radius: var(--r); padding: 14px; }
+.stat-label { font-size: 10px; letter-spacing: 0.07em; color: var(--text3); margin-bottom: 4px; font-weight: 700; }
+.stat-val { font-size: 28px; font-weight: 300; color: var(--text); line-height: 1; }
+.stat-unit { font-size: 12px; color: var(--text3); }
+.insight-card { background: var(--surface); border-radius: var(--r); padding: 14px; margin-bottom: 8px; border-left: 3px solid var(--accent); }
+.insight-source { font-size: 11px; color: var(--accent); font-weight: 700; margin-bottom: 4px; letter-spacing: 0.04em; }
+.insight-txt { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+.color-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.color-dot { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s; }
+.color-dot.selected { border-color: var(--accent); transform: scale(1.2); }
+
+.status-row { display: flex; gap: 8px; }
+.status-btn { flex: 1; padding: 8px; background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; font-size: 12px; font-weight: 700; color: var(--text2); cursor: pointer; font-family: 'Lato', sans-serif; text-align: center; transition: all 0.15s; }
+.status-btn.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.empty-state { text-align: center; padding: 50px 20px; color: var(--text3); }
+.empty-state p { font-size: 14px; line-height: 1.8; }
+.empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.35; }
+
+.insight-row { display: flex; gap: 8px; margin-bottom: 7px; align-items: center; }
+.insight-row .ir-text { flex: 1; background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; padding: 9px 11px; font-size: 14px; color: var(--text); font-family: 'Lato', sans-serif; outline: none; -webkit-appearance: none; }
+.insight-row .ir-text:focus { border-color: var(--accent); }
+.insight-row .ir-page { width: 68px; flex-shrink: 0; background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; padding: 9px 8px; font-size: 14px; color: var(--text); font-family: 'Lato', sans-serif; outline: none; text-align: center; -webkit-appearance: none; }
+.insight-row .ir-page:focus { border-color: var(--accent); }
+.add-row-btn { background: none; border: 1px dashed var(--border2); border-radius: 8px; width: 100%; padding: 8px; font-size: 13px; color: var(--text3); cursor: pointer; font-family: 'Lato', sans-serif; margin-top: 2px; transition: border-color 0.15s, color 0.15s; }
+.add-row-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.insight-line { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 3px 0; font-size: 13px; line-height: 1.5; }
+.insight-line + .insight-line { border-top: 1px solid rgba(123,139,111,0.15); }
+.insight-pg { font-size: 11px; color: var(--accent); font-weight: 700; white-space: nowrap; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>閱讀紀錄</h1>
+    <div class="header-sub" id="today-date"></div>
+  </div>
+  <button class="add-btn" onclick="openAdd()">+</button>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('shelf')">全部</button>
+  <button class="tab" onclick="switchTab('want')">待讀書籍</button>
+  <button class="tab" onclick="switchTab('reading')">閱讀中</button>
+  <button class="tab" onclick="switchTab('done')">已讀完</button>
+  <button class="tab" onclick="switchTab('stats')">總紀錄</button>
+</div>
+
+<div class="panel active" id="panel-shelf"><div id="shelf-content"></div></div>
+<div class="panel" id="panel-want"><div id="want-content"></div></div>
+<div class="panel" id="panel-reading"><div id="reading-content"></div></div>
+<div class="panel" id="panel-done"><div id="done-content"></div></div>
+<div class="panel" id="panel-stats">
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">總書籍</div><div class="stat-val" id="st-total">0</div><div class="stat-unit">本</div></div>
+    <div class="stat-card"><div class="stat-label">已讀完</div><div class="stat-val" id="st-done">0</div><div class="stat-unit">本</div></div>
+    <div class="stat-card"><div class="stat-label">總閱讀時間</div><div class="stat-val" id="st-time">0</div><div class="stat-unit">分鐘</div></div>
+    <div class="stat-card"><div class="stat-label">閱讀紀錄</div><div class="stat-val" id="st-logs">0</div><div class="stat-unit">筆</div></div>
+  </div>
+
+  <div class="section-title">本週閱讀累積</div>
+  <div id="weekly-chart" style="margin-bottom:20px"></div>
+
+  <div class="section-title">每月閱讀累積</div>
+  <div id="monthly-chart" style="margin-bottom:20px"></div>
+
+  <div class="section-title">Memory</div>
+  <div id="all-insights"></div>
+</div>
+
+<!-- Detail modal -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-close-row"><button class="modal-close" onclick="closeDetail()">✕</button></div>
+    <div class="modal-body" id="detail-body"></div>
+  </div>
+</div>
+
+<!-- Add / Edit modal -->
+<div class="modal-overlay" id="add-modal">
+  <div class="add-modal">
+    <div class="modal-handle" style="margin-top:12px"></div>
+    <div class="modal-close-row"><button class="modal-close" onclick="closeAdd()">✕</button></div>
+    <h2 id="add-modal-title">新增書籍</h2>
+    <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px">
+      <div class="cover-upload" id="cover-upload-btn" onclick="document.getElementById('cover-input').click()">
+        <input type="file" id="cover-input" accept="image/*" onchange="previewCover(this)">
+        <div class="cover-upload-icon">📷</div>
+        <div class="cover-upload-label">上傳封面</div>
+      </div>
+      <div style="flex:1">
+        <div class="field"><label>書名</label><input type="text" id="nb-title" placeholder="輸入書名"></div>
+        <div class="field"><label>作者</label><input type="text" id="nb-author" placeholder="輸入作者名"></div>
+      </div>
+    </div>
+    <div class="field"><label>總頁數</label><input type="number" id="nb-pages" placeholder="例：320" min="1"></div>
+    <div class="field">
+      <label>狀態</label>
+      <div class="status-row">
+        <button class="status-btn selected" onclick="selectStatus(this,'want')">待讀</button>
+        <button class="status-btn" onclick="selectStatus(this,'reading')">閱讀中</button>
+        <button class="status-btn" onclick="selectStatus(this,'done')">已讀完</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>書脊顏色（無封面時顯示）</label>
+      <div class="color-row" style="margin-bottom:10px">
+        <div class="color-dot selected" style="background:#7b8b6f" data-c="#7b8b6f" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#8c9aaa" data-c="#8c9aaa" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#a8867a" data-c="#a8867a" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#9a8faa" data-c="#9a8faa" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#b5a882" data-c="#b5a882" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#7a9e9a" data-c="#7a9e9a" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#c4a882" data-c="#c4a882" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#a08c8c" data-c="#a08c8c" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#9aaa8c" data-c="#9aaa8c" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#8aa0b4" data-c="#8aa0b4" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#b49090" data-c="#b49090" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#7e8c7a" data-c="#7e8c7a" onclick="pickColor(this)"></div>
+      </div>
+      <div class="color-row">
+        <div class="color-dot" style="background:#e8736a" data-c="#e8736a" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#f0a050" data-c="#f0a050" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#f0d060" data-c="#f0d060" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#6abf80" data-c="#6abf80" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#50b8d0" data-c="#50b8d0" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#6a8fe8" data-c="#6a8fe8" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#c070d0" data-c="#c070d0" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#e870a0" data-c="#e870a0" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#40c8b8" data-c="#40c8b8" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#f08080" data-c="#f08080" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#80c0a0" data-c="#80c0a0" onclick="pickColor(this)"></div>
+        <div class="color-dot" style="background:#a0a0e0" data-c="#a0a0e0" onclick="pickColor(this)"></div>
+      </div>
+    </div>
+    <input type="hidden" id="edit-book-id" value="">
+    <button class="btn-primary" style="width:100%;margin-top:8px" onclick="saveBook()">儲存</button>
+  </div>
+</div>
+
+<script>
+let S = JSON.parse(localStorage.getItem('myShelf4') || '{"books":[]}');
+let newCoverData = null, newStatus = 'want', newColor = '#7b8b6f', editRating = 0;
+
+const save = () => localStorage.setItem('myShelf4', JSON.stringify(S));
+const byId = id => S.books.find(b => b.id === id);
+const fmtDate = d => new Date(d).toLocaleDateString('zh-TW',{month:'short',day:'numeric'});
+const fmtDT = d => new Date(d).toLocaleDateString('zh-TW',{month:'short',day:'numeric'}) + ' ' + new Date(d).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('active',['shelf','want','reading','done','stats'][i]===t));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+t).classList.add('active');
+  if(t==='shelf') renderShelf('all');
+  if(t==='want') renderShelf('want');
+  if(t==='reading') renderShelf('reading');
+  if(t==='done') renderShelf('done');
+  if(t==='stats') renderStats();
+}
+
+function coverHtml(b, size) {
+  return b.cover
+    ? `<img src="${b.cover}" alt="${b.title}">`
+    : `<div class="${size==='sm'?'book-cover-ph':'detail-cover-ph'}" style="background:${b.color||'#7b8b6f'};height:100%"><span>${b.title}</span></div>`;
+}
+
+function renderShelf(filter) {
+  const targets = {all:'shelf-content', want:'want-content', reading:'reading-content', done:'done-content'};
+  const el = document.getElementById(targets[filter]);
+  let books = S.books;
+  if(filter==='want') books = books.filter(b=>b.status==='want');
+  if(filter==='reading') books = books.filter(b=>b.status==='reading');
+  if(filter==='done') books = books.filter(b=>b.status==='done');
+  if(!books.length) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📚</div><p>${filter==='all'?'書架是空的<br>點右上角 + 新增第一本書':filter==='want'?'還沒有待讀的書':filter==='reading'?'還沒有閱讀中的書':'還沒有讀完的書'}</p></div>`;
+    return;
+  }
+  const groups = filter==='all'
+    ? [['閱讀中',books.filter(b=>b.status==='reading')],['待讀',books.filter(b=>b.status==='want')],['已讀完',books.filter(b=>b.status==='done')]]
+    : [['',books]];
+  el.innerHTML = groups.filter(([,arr])=>arr.length).map(([label,arr])=>`
+    <div class="shelf-section">
+      ${label?`<div class="shelf-label">${label}</div>`:''}
+      <div class="books-grid">
+        ${arr.map(b=>{
+          const pct = b.totalPages>0?Math.min(100,Math.round((b.currentPage||0)/b.totalPages*100)):0;
+          const badge = b.status==='reading'?'<span class="book-status-badge badge-reading">閱讀中</span>':b.status==='done'?'<span class="book-status-badge badge-done">讀完</span>':'';
+          const stars = b.review?`<div class="stars-mini">${'★'.repeat(b.review.rating)}</div>`:'';
+          return `<div class="book-card" onclick="openDetail(${b.id})">
+            <div class="book-cover"><div class="book-spine" style="background:${b.color||'#7b8b6f'}"></div>${coverHtml(b,'sm')}${badge}</div>
+            <div class="book-meta">
+              <div class="book-meta-title">${b.title}</div>
+              <div class="book-meta-author">${b.author||''}</div>
+              ${b.status==='reading'?`<div class="book-progress-mini"><div class="book-progress-fill" style="width:${pct}%"></div></div>`:''}
+              ${stars}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function openDetail(id) {
+  const b = byId(id);
+  editRating = b.review?b.review.rating:0;
+  renderDetail(b);
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function renderDetail(b) {
+  const pct = b.totalPages>0?Math.min(100,Math.round((b.currentPage||0)/b.totalPages*100)):0;
+  const now = new Date(); now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
+  const logs = (b.logs||[]).slice().reverse();
+
+  const logsHtml = logs.length ? logs.map(l=>`
+    <div class="log-item">
+      <div class="log-item-header">
+        <span class="log-item-date">${fmtDT(l.time)}${l.page?' · 第'+l.page+'頁':''}</span>
+        <span class="log-item-dur">${l.duration?l.duration+'分鐘':''}</span>
+      </div>
+      <div class="log-item-text">${l.note}</div>
+      ${(l.insights&&l.insights.length)?`<div class="log-item-insight"><div class="log-item-insight-label">Memory</div>${l.insights.map(i=>`<div class="insight-line">${i.text}${i.page?`<span class="insight-pg">p.${i.page}</span>`:''}</div>`).join('')}</div>`:(l.insight?`<div class="log-item-insight"><div class="log-item-insight-label">Memory</div>${l.insight}</div>`:'')}
+    </div>`).join('')
+    : '<div style="font-size:13px;color:var(--text3);text-align:center;padding:16px 0">還沒有閱讀紀錄</div>';
+
+  const reviewSection = b.status==='done' ? `
+    <div class="section-title">書評 · 評分</div>
+    ${b.review ? `
+      <div class="review-box">
+        <div style="font-size:20px;color:var(--accent);letter-spacing:-1px;margin-bottom:10px">${'★'.repeat(b.review.rating)}${'☆'.repeat(5-b.review.rating)}</div>
+        <div class="review-text">${b.review.text}</div>
+        <div class="review-date">寫於 ${fmtDate(b.review.date)}</div>
+        <button class="btn-ghost" style="margin-top:10px;width:100%;font-size:12px" onclick="clearReview(${b.id})">重新寫書評</button>
+      </div>` : `
+      <div class="review-box">
+        <div style="font-size:13px;color:var(--text3);margin-bottom:12px">書讀完了，寫下你的評分與感想吧！</div>
+        <div class="review-stars-row" id="rev-stars">
+          ${[1,2,3,4,5].map(i=>`<button class="star-btn ${i<=editRating?'lit':''}" onclick="setRevRating(${b.id},${i})">★</button>`).join('')}
+        </div>
+        <div class="field"><textarea id="rev-text" rows="4" placeholder="這本書帶給你什麼？有什麼讓你難忘的洞見或感受？"></textarea></div>
+        <button class="btn-primary" style="width:100%" onclick="saveReview(${b.id})">儲存書評</button>
+      </div>`}` : '';
+
+  document.getElementById('detail-body').innerHTML = `
+    <div class="detail-header">
+      <div class="detail-cover" style="height:120px">${coverHtml(b,'lg')}</div>
+      <div class="detail-info">
+        <div class="detail-title">${b.title}</div>
+        <div class="detail-author">${b.author||'未知作者'}</div>
+        ${b.status==='reading'?`
+          <div class="detail-progress-label"><span>進度</span><span id="dp-pct">${pct}%</span></div>
+          <div class="detail-track"><div class="detail-fill" id="dp-bar" style="width:${pct}%"></div></div>
+          <div class="page-row">
+            <input type="number" id="dp-cur" placeholder="目前頁" value="${b.currentPage||''}" min="0">
+            <span>/</span>
+            <input type="number" id="dp-tot" placeholder="總頁數" value="${b.totalPages||''}" min="1">
+            <button class="update-btn" onclick="updateProgress(${b.id})">更新</button>
+          </div>`
+        : b.status==='done' ? '<div style="font-size:12px;color:#2ecc71;font-weight:700;margin-top:4px">✓ 已讀完</div>'
+        : '<div style="font-size:12px;color:var(--text3);margin-top:4px">待讀中</div>'}
+      </div>
+    </div>
+
+    <div class="action-row">
+      <button class="btn-ghost" onclick="openEdit(${b.id})">編輯書籍資訊</button>
+      ${b.status==='want'?`<button class="btn-ghost" onclick="changeStatus(${b.id},'reading')">開始閱讀</button>`:''}
+      ${b.status==='reading'?`<button class="btn-ghost" onclick="changeStatus(${b.id},'done')">標記已讀完</button>`:''}
+      <button class="btn-danger" onclick="deleteBook(${b.id})">刪除</button>
+    </div>
+
+    ${b.status!=='want'?`
+      <div class="section-title">新增閱讀紀錄</div>
+      <div class="field"><label>閱讀時間</label><input type="datetime-local" id="lf-time" value="${now.toISOString().slice(0,16)}"></div>
+      <div class="field"><label>閱讀分鐘數</label><input type="number" id="lf-dur" placeholder="例：30" min="1"></div>
+      <div class="field"><label>讀到第幾頁</label><input type="number" id="lf-page" placeholder="例：128"></div>
+      <div class="field"><label>今天讀到什麼？（摘要、感想、心得）</label><textarea id="lf-note" rows="4" placeholder="今天讀了什麼？有什麼讓你印象深刻的情節或想法？"></textarea></div>
+      <div class="field">
+        <label>有沒有特別想記住的一句話？</label>
+        <div id="insight-rows">
+          <div class="insight-row"><input type="text" class="ir-text" placeholder="記錄句子"><input type="number" class="ir-page" placeholder="頁碼" min="1"></div>
+          <div class="insight-row"><input type="text" class="ir-text" placeholder="記錄句子"><input type="number" class="ir-page" placeholder="頁碼" min="1"></div>
+          <div class="insight-row"><input type="text" class="ir-text" placeholder="記錄句子"><input type="number" class="ir-page" placeholder="頁碼" min="1"></div>
+        </div>
+        <button type="button" class="add-row-btn" onclick="addInsightRow()">＋ 新增欄位</button>
+      </div>
+      <button class="btn-primary" style="width:100%" onclick="addLog(${b.id})">儲存本次紀錄</button>
+    `:''}
+
+    ${reviewSection}
+
+    <div class="section-title">閱讀紀錄（${(b.logs||[]).length} 筆）</div>
+    ${logsHtml}
+    <div style="height:20px"></div>`;
+}
+
+function updateProgress(id) {
+  const b = byId(id);
+  const cur = parseInt(document.getElementById('dp-cur').value)||0;
+  const tot = parseInt(document.getElementById('dp-tot').value)||b.totalPages||0;
+  b.currentPage=cur; b.totalPages=tot;
+  const pct = tot>0?Math.min(100,Math.round(cur/tot*100)):0;
+  document.getElementById('dp-pct').textContent=pct+'%';
+  document.getElementById('dp-bar').style.width=pct+'%';
+  save(); refreshAll();
+}
+
+function addLog(id) {
+  const note = document.getElementById('lf-note').value.trim();
+  if(!note){alert('請填寫閱讀內容');return;}
+  const b = byId(id); if(!b.logs) b.logs=[];
+  const page = parseInt(document.getElementById('lf-page').value)||0;
+  const insights = [...document.querySelectorAll('#insight-rows .insight-row')].map(row=>({
+    text: row.querySelector('.ir-text').value.trim(),
+    page: parseInt(row.querySelector('.ir-page').value)||0
+  })).filter(i=>i.text);
+  b.logs.push({id:Date.now(), time:document.getElementById('lf-time').value||new Date().toISOString(), duration:parseInt(document.getElementById('lf-dur').value)||0, page, note, insights});
+  if(page) b.currentPage=page;
+  save(); renderDetail(b); refreshAll(); alert('紀錄已儲存！');
+}
+
+function setRevRating(id,n) {
+  editRating=n;
+  document.querySelectorAll('#rev-stars .star-btn').forEach((s,i)=>s.classList.toggle('lit',i<n));
+}
+function saveReview(id) {
+  if(!editRating){alert('請選擇評分');return;}
+  const txt = document.getElementById('rev-text').value.trim();
+  if(!txt){alert('請寫下書評');return;}
+  const b=byId(id); b.review={rating:editRating,text:txt,date:new Date().toISOString()};
+  save(); renderDetail(b); refreshAll();
+}
+function clearReview(id) { const b=byId(id); b.review=null; save(); renderDetail(b); }
+function changeStatus(id,status) { const b=byId(id); b.status=status; save(); renderDetail(b); refreshAll(); }
+function deleteBook(id) { if(!confirm('確定刪除這本書？所有紀錄也會一併刪除。'))return; S.books=S.books.filter(b=>b.id!==id); save(); closeDetail(); refreshAll(); }
+function closeDetail() { document.getElementById('detail-modal').classList.remove('open'); }
+
+function refreshAll() {
+  const idx = [...document.querySelectorAll('.tab')].findIndex(b=>b.classList.contains('active'));
+  const t = ['shelf','want','reading','done','stats'][idx];
+  if(t==='shelf') renderShelf('all');
+  if(t==='want') renderShelf('want');
+  if(t==='reading') renderShelf('reading');
+  if(t==='done') renderShelf('done');
+  if(t==='stats') renderStats();
+}
+
+function openAdd() {
+  document.getElementById('add-modal-title').textContent = '新增書籍';
+  document.getElementById('edit-book-id').value = '';
+  resetAddForm();
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function openEdit(id) {
+  const b = byId(id);
+  document.getElementById('add-modal-title').textContent = '編輯書籍資訊';
+  document.getElementById('edit-book-id').value = id;
+
+  document.getElementById('nb-title').value = b.title || '';
+  document.getElementById('nb-author').value = b.author || '';
+  document.getElementById('nb-pages').value = b.totalPages || '';
+
+  newStatus = b.status || 'want';
+  document.querySelectorAll('.status-btn').forEach(btn => {
+    const s = btn.getAttribute('onclick').match(/'(\w+)'/)[1];
+    btn.classList.toggle('selected', s === newStatus);
+  });
+
+  newColor = b.color || '#7b8b6f';
+  document.querySelectorAll('.color-dot').forEach(d => d.classList.toggle('selected', d.dataset.c === newColor));
+
+  newCoverData = b.cover || null;
+  const btn = document.getElementById('cover-upload-btn');
+  const existing = btn.querySelector('img');
+  if(existing) existing.remove();
+  if(b.cover) {
+    const img = document.createElement('img');
+    img.src = b.cover;
+    btn.appendChild(img);
+    btn.querySelector('.cover-upload-icon').style.display = 'none';
+    btn.querySelector('.cover-upload-label').style.display = 'none';
+  } else {
+    btn.querySelector('.cover-upload-icon').style.display = '';
+    btn.querySelector('.cover-upload-label').style.display = '';
+  }
+
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function closeAdd() {
+  document.getElementById('add-modal').classList.remove('open');
+  resetAddForm();
+}
+
+function resetAddForm() {
+  newCoverData=null; newStatus='want'; newColor='#7b8b6f';
+  document.getElementById('cover-input').value='';
+  const btn=document.getElementById('cover-upload-btn');
+  const img=btn.querySelector('img'); if(img) img.remove();
+  btn.querySelector('.cover-upload-icon').style.display='';
+  btn.querySelector('.cover-upload-label').style.display='';
+  document.getElementById('nb-title').value='';
+  document.getElementById('nb-author').value='';
+  document.getElementById('nb-pages').value='';
+  document.getElementById('edit-book-id').value='';
+  document.querySelectorAll('.status-btn').forEach((b,i)=>b.classList.toggle('selected',i===0));
+  document.querySelectorAll('.color-dot').forEach((d,i)=>d.classList.toggle('selected',i===0));
+}
+
+function previewCover(input) {
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    newCoverData=e.target.result;
+    const btn=document.getElementById('cover-upload-btn');
+    let img=btn.querySelector('img');
+    if(!img){img=document.createElement('img');btn.appendChild(img);}
+    img.src=newCoverData;
+    btn.querySelector('.cover-upload-icon').style.display='none';
+    btn.querySelector('.cover-upload-label').style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+
+function selectStatus(btn,status) {
+  newStatus=status;
+  document.querySelectorAll('.status-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+function pickColor(dot) {
+  newColor=dot.dataset.c;
+  document.querySelectorAll('.color-dot').forEach(d=>d.classList.remove('selected'));
+  dot.classList.add('selected');
+}
+
+function saveBook() {
+  const title=document.getElementById('nb-title').value.trim();
+  if(!title){alert('請填寫書名');return;}
+  const editId = document.getElementById('edit-book-id').value;
+
+  if(editId) {
+    const b = byId(parseInt(editId));
+    if(!b){alert('找不到書籍');return;}
+    b.title = title;
+    b.author = document.getElementById('nb-author').value.trim();
+    b.totalPages = parseInt(document.getElementById('nb-pages').value)||b.totalPages||0;
+    b.status = newStatus;
+    b.color = newColor;
+    if(newCoverData) b.cover = newCoverData;
+    save(); closeAdd();
+    renderDetail(b); refreshAll();
+  } else {
+    S.books.unshift({id:Date.now(),title,author:document.getElementById('nb-author').value.trim(),totalPages:parseInt(document.getElementById('nb-pages').value)||0,currentPage:0,status:newStatus,color:newColor,cover:newCoverData||null,logs:[],review:null,addedAt:new Date().toISOString()});
+    save(); closeAdd(); renderShelf('all'); switchTab('shelf');
+  }
+}
+
+function addInsightRow() {
+  const container = document.getElementById('insight-rows');
+  if(!container) return;
+  const row = document.createElement('div');
+  row.className = 'insight-row';
+  row.innerHTML = '<input type="text" class="ir-text" placeholder="記錄句子"><input type="number" class="ir-page" placeholder="頁碼" min="1">';
+  container.appendChild(row);
+}
+
+function renderStats() {
+  document.getElementById('st-total').textContent=S.books.length;
+  document.getElementById('st-done').textContent=S.books.filter(b=>b.status==='done').length;
+  const allLogs=S.books.flatMap(b=>(b.logs||[]).map(l=>({...l,bookTitle:b.title})));
+  document.getElementById('st-time').textContent=allLogs.reduce((a,l)=>a+(l.duration||0),0);
+  document.getElementById('st-logs').textContent=allLogs.length;
+
+  const now = new Date();
+
+  // Weekly chart — past 7 days
+  const days = ['日','一','二','三','四','五','六'];
+  const weekData = Array(7).fill(0).map((_,i)=>{
+    const d = new Date(now); d.setDate(d.getDate()-6+i);
+    const key = d.toLocaleDateString('zh-TW');
+    const mins = allLogs.filter(l=>new Date(l.time).toLocaleDateString('zh-TW')===key).reduce((a,l)=>a+(l.duration||0),0);
+    return {label: days[d.getDay()], date: key, mins};
+  });
+  const wMax = Math.max(...weekData.map(d=>d.mins), 1);
+  document.getElementById('weekly-chart').innerHTML = `
+    <div style="display:flex;align-items:flex-end;gap:6px;height:100px">
+      ${weekData.map(d=>`
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+          <div style="font-size:10px;color:var(--accent);font-weight:700">${d.mins||''}</div>
+          <div style="width:100%;background:${d.mins>0?'var(--accent)':'var(--surface)'};border-radius:4px 4px 0 0;height:${Math.max(4,Math.round(d.mins/wMax*72))}px;transition:height 0.3s"></div>
+          <div style="font-size:11px;color:var(--text3)">${d.label}</div>
+        </div>`).join('')}
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:6px;text-align:right">單位：分鐘</div>`;
+
+  // Monthly chart — past 6 months
+  const monthData = Array(6).fill(0).map((_,i)=>{
+    const d = new Date(now.getFullYear(), now.getMonth()-5+i, 1);
+    const y = d.getFullYear(), m = d.getMonth();
+    const mins = allLogs.filter(l=>{ const ld=new Date(l.time); return ld.getFullYear()===y&&ld.getMonth()===m; }).reduce((a,l)=>a+(l.duration||0),0);
+    return {label:`${m+1}月`, mins};
+  });
+  const mMax = Math.max(...monthData.map(d=>d.mins), 1);
+  document.getElementById('monthly-chart').innerHTML = `
+    <div style="display:flex;align-items:flex-end;gap:8px;height:100px">
+      ${monthData.map(d=>`
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+          <div style="font-size:10px;color:var(--accent);font-weight:700">${d.mins||''}</div>
+          <div style="width:100%;background:${d.mins>0?'var(--accent)':'var(--surface)'};border-radius:4px 4px 0 0;height:${Math.max(4,Math.round(d.mins/mMax*72))}px;transition:height 0.3s"></div>
+          <div style="font-size:11px;color:var(--text3)">${d.label}</div>
+        </div>`).join('')}
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:6px;text-align:right">單位：分鐘</div>`;
+
+  // Memory table — all insight rows from all logs
+  const memRows = allLogs.flatMap(l=>{
+    const items = l.insights&&l.insights.length ? l.insights : (l.insight?[{text:l.insight,page:l.insightPage||0}]:[]);
+    return items.filter(i=>i.text).map(i=>({bookTitle:l.bookTitle, text:i.text, page:i.page||0, time:l.time}));
+  }).sort((a,b)=>new Date(b.time)-new Date(a.time));
+
+  document.getElementById('all-insights').innerHTML = memRows.length ? `
+    <div style="overflow-x:auto">
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border2)">
+            <th style="padding:8px 10px;text-align:left;font-size:10px;letter-spacing:0.07em;color:var(--text3);font-weight:700;white-space:nowrap">書籍名稱</th>
+            <th style="padding:8px 10px;text-align:left;font-size:10px;letter-spacing:0.07em;color:var(--text3);font-weight:700">記錄的句子</th>
+            <th style="padding:8px 10px;text-align:center;font-size:10px;letter-spacing:0.07em;color:var(--text3);font-weight:700;white-space:nowrap">頁碼</th>
+            <th style="padding:8px 10px;text-align:right;font-size:10px;letter-spacing:0.07em;color:var(--text3);font-weight:700;white-space:nowrap">記錄時間</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${memRows.map((r,idx)=>`
+            <tr style="border-bottom:1px solid var(--border);background:${idx%2===0?'transparent':'var(--bg2)'}">
+              <td style="padding:10px 10px;color:var(--accent);font-weight:700;white-space:nowrap;vertical-align:top;max-width:90px;overflow:hidden;text-overflow:ellipsis">${r.bookTitle}</td>
+              <td style="padding:10px 10px;color:var(--text);line-height:1.5;vertical-align:top">${r.text}</td>
+              <td style="padding:10px 10px;color:var(--text3);text-align:center;vertical-align:top;white-space:nowrap">${r.page?'p.'+r.page:'—'}</td>
+              <td style="padding:10px 10px;color:var(--text3);text-align:right;vertical-align:top;white-space:nowrap">${fmtDate(r.time)}</td>
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>` : '<div style="font-size:13px;color:var(--text3);text-align:center;padding:20px 0">還沒有記錄任何 Memory</div>';
+}
+
+document.getElementById('detail-modal').addEventListener('click',e=>{if(e.target===document.getElementById('detail-modal'))closeDetail();});
+document.getElementById('add-modal').addEventListener('click',e=>{if(e.target===document.getElementById('add-modal'))closeAdd();});
+document.getElementById('today-date').textContent=new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'long',day:'numeric'});
+renderShelf('all');
+</script>
+</body>
+</html>
